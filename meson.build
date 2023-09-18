@@ -9,6 +9,7 @@ exe = executable(
   'gpt-chat',
   'chat.hh', 'chat.cc',
   'app.hh', 'app.cc',
+  'ncwindow.hh', 'ncwindow.cc',
   'main.cc', 
   dependencies: [ncurses],
   install : true)
