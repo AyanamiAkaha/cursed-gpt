@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <signal.h>
 
 #include "ncwindow.hh"
 
@@ -25,6 +26,9 @@ private:
     CommandResult processInput();
     CommandResult parseCommand(std::string command);
     void newChat();
+    void setTitle();
+    void setStatus();
+    void fullRefresh();
 public:
     App();
     ~App();

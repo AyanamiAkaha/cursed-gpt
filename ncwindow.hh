@@ -20,6 +20,7 @@ private:
 public:
     NCWindow();
     ~NCWindow();
+    void resize();
     void redraw();
     void feedback(char);
     void clearPrompt();

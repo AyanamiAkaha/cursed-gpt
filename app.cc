@@ -12,11 +12,18 @@ App::App(/* args */) {
     newChat();
 }
 
-App::~App() {}
+App::~App() {
+    signal(SIGWINCH, SIG_DFL);
+}
 
 CommandResult App::processInput() {
     auto ch = getch();
     if (ch == ERR) return NO_COMMAND;
+    if (ch == KEY_RESIZE) {
+        window.resize();
+        fullRefresh();
+        return NO_COMMAND;
+    }
     if (ch == '\n') {
         auto result = parseCommand(input_buffer);
         input_buffer.clear();
@@ -46,9 +53,24 @@ void App::newChat() {
     chats.emplace_back();
 }
 
-int App::run() {
-    window.setTitle(PROJECT_NAME);
+void App::fullRefresh() {
+    setStatus();
+    setTitle();
+    window.redraw();
+    needs_refresh = true;
+}
+
+void App::setStatus() {
     window.setStatus("Chat " + std::to_string(current_chat + 1) + "/" + std::to_string(chats.size()));
+}
+
+void App::setTitle() {
+    window.setTitle(PROJECT_NAME);
+}
+
+int App::run() {
+    setStatus();
+    setTitle();
     window.redraw();
     while(true) {
         auto result = processInput();

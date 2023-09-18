@@ -12,6 +12,8 @@ NCWindow::NCWindow() {
     w_prompt = newwin(1, COLS, LINES - 1, 0);
     w_status = newwin(1, COLS, LINES - 2, 0);
     w_chat = newwin(LINES - 3, COLS, 1, 0);
+    scrollok(w_chat, TRUE);
+    scrollok(w_prompt, TRUE);
     refresh();
 }
 
@@ -40,11 +42,28 @@ void NCWindow::initCurses() {
     clear();
 }
 
+void NCWindow::resize() {
+    resizeterm(0, 0);
+    auto width = getmaxx(stdscr);
+    auto height = getmaxy(stdscr);
+    wresize(w_title, 1, width);
+    wresize(w_prompt, 1, width);
+    wresize(w_status, 1, width);
+    wresize(w_chat, height - 3, width);
+    mvwin(w_prompt, height - 1, 0);
+    mvwin(w_status, height - 2, 0);
+    wclear(w_prompt);
+    wclear(w_status);
+    wclear(w_chat);
+    wclear(w_title);
+    refresh();
+    redraw();
+}
+
 void NCWindow::redraw() {
     wrefresh(w_title);
     wrefresh(w_status);
     wrefresh(w_chat);
-    refresh();
     wrefresh(w_prompt);
 }
 
@@ -92,7 +111,7 @@ void NCWindow::clearPrompt() {
 }
 
 void NCWindow::setStatus(std::string status) {
-    // wclear(w_status);
+    wclear(w_status);
     mvwchgat(w_status, 0, 0, -1, A_NORMAL, 4, NULL);
     wattrset(w_status, COLOR_PAIR(4));
     mvwprintw(w_status, 0, 1, status.c_str());
@@ -100,7 +119,7 @@ void NCWindow::setStatus(std::string status) {
 }
 
 void NCWindow::setTitle(std::string title) {
-    // wclear(w_title);
+    wclear(w_title);
     mvwchgat(w_title, 0, 0, -1, A_BOLD, 4, NULL);
     wattrset(w_title, COLOR_PAIR(4));
     mvwprintw(w_title, 0, 1, title.c_str());
