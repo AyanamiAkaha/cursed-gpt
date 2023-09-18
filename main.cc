@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
         std::cerr << argv[0] <<  "takes no arguments.\n";
         return 1;
     }
-    auto app = std::unique_ptr<App>();
-    auto exit_code = app->run();
+    App app;
+    auto exit_code = app.run();
     return exit_code;
 }

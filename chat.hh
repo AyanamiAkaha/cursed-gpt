@@ -6,34 +6,28 @@
 
 
 enum class Author {
+    NONE,
     SYSTEM,
     USER,
     ASSISTANT
 };
 
-class Message {
-private:
-    std::shared_ptr<std::string> message;
+struct Message {
+    std::string message;
     Author author;
-    std::string printAuthor() const;
-public:
-    Message(std::string msg, Author author);
-    ~Message();
-    std::string asString() const;
-    friend std::ostream &operator<<(std::ostream &os, const Message &msg);
 };
 
-class Chat
-{
+class Chat {
 private:
+    std::vector<Message> template_messages;
     std::vector<Message> messages;
-    /// @brief Number of starting lines that are never deleted from history
-    uint32_t static_lines = 0;
-    /// @brief Maximum number of lines in chat history
-    uint32_t max_lines = 10;
+    uint32_t history_length = 100;
+    void addMsg(const Message msg);
 public:
     Chat();
     ~Chat();
-    void addMsg(std::string msg, Author author);
-    void redraw();
+    std::vector<Message> getMessages() const;
+    void addString(const std::string& str);
+    void send(const std::string& str, Author author = Author::USER);
+    void onReceive(const std::string& str, Author author = Author::ASSISTANT);
 };
