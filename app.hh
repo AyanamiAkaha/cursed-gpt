@@ -1,5 +1,4 @@
-#ifndef APP_HH
-#define APP_HH
+#pragma once
 
 struct CommandResult {
     bool _exit;
@@ -16,4 +15,3 @@ public:
     ~App();
     int run();
 };
-#endif

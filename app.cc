@@ -1,5 +1,6 @@
 #include <iostream>
 #include "app.hh"
+#include "chat.hh"
 
 #define PROJECT_NAME "gpt-chat"
 
@@ -27,6 +28,12 @@ App::~App()
 }
 
 int App::run() {
+    Chat c;
+    c.addMsg("Hello", Author::SYSTEM);
+    c.addMsg("Hello", Author::USER);
+    c.addMsg("Hello", Author::ASSISTANT);
+    c.redraw();
+    /*
     std::cout << "Welcome to " << PROJECT_NAME << "!\n";
     while(true) {
         std::string cmd;
@@ -38,4 +45,6 @@ int App::run() {
             return result.exit_code;
         }
     }
+    */
+   return 0;
 }
