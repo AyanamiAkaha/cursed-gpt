@@ -18,4 +18,6 @@ public:
     void push(const T& v);
     T pop();
     bool empty();
+    void operator<<(const T& v);
+    T operator>>(T& v);
 };

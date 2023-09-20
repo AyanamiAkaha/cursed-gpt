@@ -29,7 +29,7 @@ public:
 };
 
 class Chat {
-private:
+protected:
     std::vector<Message> template_messages;
     std::vector<Message> messages;
     uint32_t history_length = 100;

@@ -32,3 +32,13 @@ bool ConcurrentQueue<T>::empty()
     std::lock_guard<std::mutex> lock(mutex);
     return queue.empty();
 }
+
+template <typename T>
+void ConcurrentQueue<T>::operator<<(const T& v) {
+    push(v);
+}
+
+template <typename T>
+T ConcurrentQueue<T>::operator>>(T& v) {
+    return pop();
+}

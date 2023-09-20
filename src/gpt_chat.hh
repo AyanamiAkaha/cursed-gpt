@@ -1,20 +1,28 @@
 #pragma once
 
+#include <atomic>
+#include <string>
+
+#include "concurrent_queue.hh"
 #include "chat.hh"
 
+static std::atomic<unsigned int> next_id(1);
+
 class ApiRequest {
-    Message message;
+    unsigned int id = next_id++;
+    std::unique_ptr<char[]> body;
 public:
-    ApiRequest(const Message& message);
+    ApiRequest(std::unique_ptr<char[]>&& body);
     ApiRequest(const ApiRequest& req);
-    ~ApiRequest();
-    std::string getJson() const;
+    ApiRequest(const std::vector<Message>& messages);
+    ~ApiRequest() = default;
 };
 
 class GptChat : public Chat {
 private:
-    // httplib::Client client;
-    // nlohmann::json json;
+    httplib::Client client;
+    ConcurrentQueue<ApiRequest> reqQueue;
+    ConcurrentQueue<std::string> resQueue;
 public:
     GptChat(std::string name = "GptChat");
     ~GptChat();
