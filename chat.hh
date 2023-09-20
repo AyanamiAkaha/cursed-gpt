@@ -29,10 +29,10 @@ private:
     void addMsg(const Message msg);
 public:
     Chat(std::string name = "Chat");
-    ~Chat();
+    virtual ~Chat();
     std::vector<Message> getMessages() const;
     void addString(const std::string& str);
-    void send(const std::string& str, Author author = Author::USER);
-    void onReceive(const std::string& str, Author author = Author::ASSISTANT);
+    virtual void send(const std::string& str, Author author = Author::USER);
+    virtual void onReceive(const std::string& str, Author author = Author::ASSISTANT);
     std::string getName() const;
 };
