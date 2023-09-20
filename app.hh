@@ -17,7 +17,7 @@ constexpr CommandResult NO_COMMAND = { false, 0 };
 class App
 {
 private:
-    std::vector<Chat> chats;
+    std::vector<std::shared_ptr<Chat>> chats;
     int current_chat = 0;
     std::string input_buffer;
     bool needs_refresh = true;

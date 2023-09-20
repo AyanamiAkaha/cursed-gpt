@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <functional>
 
 class Chat;
+class Message;
 
 // WINDOW type needed by ncurses
 struct _win_st;
@@ -14,17 +17,27 @@ private:
     WINDOW* w_chat;
     WINDOW* w_title;
     WINDOW* w_status;
+    std::string inputBuffer;
     int prompt_pos = 0;
+    std::weak_ptr<const Chat> chat;
+    std::function<std::string()> getStatusText;
+    unsigned int lastMessageId = 0;
 
     void initCurses();
+    void createWindows();
+    void printTitle();
+    void printStatus();
+    void fullRefresh();
+    void feedback(const char);
+    void resize();
+    void redraw();
+    void clearPrompt();
+    void printChat();
 public:
     NCWindow();
     ~NCWindow();
-    void resize();
-    void redraw();
-    void feedback(char);
-    void clearPrompt();
-    void printChat(const Chat& chat);
-    void setTitle(std::string title);
-    void setStatus(std::string status);
+    void setStatusCb(std::function<std::string()> getStatusText);
+    void setChat(std::weak_ptr<const Chat> chat);
+    std::optional<std::string> processInput();
+    void update();
 };
