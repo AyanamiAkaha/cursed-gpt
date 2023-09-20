@@ -4,9 +4,14 @@
 #include "ncwindow.hh"
 #include "chat.hh"
 
+void clean_curses() {
+    if(!isendwin()) endwin();
+}
+
 NCWindow::NCWindow() {
     initCurses();
     createWindows();
+    atexit(clean_curses);
 }
 
 NCWindow::~NCWindow() {
@@ -14,7 +19,7 @@ NCWindow::~NCWindow() {
     delwin(w_prompt);
     delwin(w_status);
     delwin(w_chat);
-    endwin();
+    clean_curses();
 }
 
 void NCWindow::initCurses() {
