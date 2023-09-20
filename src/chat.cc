@@ -1,7 +1,16 @@
-#include <iostream>
+#include <string>
 #include <functional>
 #include <variant>
+#include <algorithm>
 #include "chat.hh"
+
+Message::Message(const std::string &message, Author author) : message(message), author(author) {}
+Message::Message(const Message &msg) :
+    id(msg.id),
+    timestamp(msg.timestamp),
+    message(std::string(msg.message.begin(), msg.message.end())),
+    author(msg.author) {}
+Message::~Message() {}
 
 Chat::Chat(std::string name)
 {
@@ -13,8 +22,7 @@ Chat::~Chat() {}
 void Chat::addMsg(const Message msg)
 {
     messages.push_back(msg);
-    if (messages.size() > history_length)
-    {
+    if (messages.size() > history_length) {
         messages.erase(messages.begin());
     }
 }

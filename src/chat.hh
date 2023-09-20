@@ -1,10 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 #include <string>
 #include <memory>
+#include <atomic>
 
-static unsigned int next_id = 1;
+static std::atomic<unsigned int> next_id(1);
 
 enum class Author {
     NONE,
@@ -13,11 +15,17 @@ enum class Author {
     ASSISTANT
 };
 
-struct Message {
+class Message {
+public:
+    // XXX: I cannot have const fields, because C++ is shitty and vector requires mutable fields
+    unsigned int id = next_id++;
+    time_t timestamp = time(nullptr);
     std::string message;
     Author author;
-    time_t timestamp = time(nullptr);
-    unsigned int id = next_id++;
+
+    Message(const std::string& message, Author author = Author::NONE);
+    Message(const Message& msg);
+    ~Message();
 };
 
 class Chat {

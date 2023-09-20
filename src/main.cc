@@ -1,5 +1,4 @@
 #include <iostream>
-#include <memory>
 #include "app.hh"
 
 int main(int argc, char **argv) {
