@@ -27,6 +27,8 @@ void NCWindow::initCurses() {
     setlocale(LC_ALL, "");
     initscr();
     start_color();
+    use_default_colors();
+    assume_default_colors(COLOR_WHITE, COLOR_BLACK);
     cbreak();
     noecho();
     intrflush(stdscr, FALSE);
