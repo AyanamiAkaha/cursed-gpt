@@ -10,6 +10,7 @@ Message::Message(const Message &msg) :
     timestamp(msg.timestamp),
     message(std::string(msg.message.begin(), msg.message.end())),
     author(msg.author) {}
+Message::Message() : message(""), author(Author::NONE) {}
 Message::~Message() {}
 
 Chat::Chat(std::string name)

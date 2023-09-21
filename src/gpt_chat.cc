@@ -17,9 +17,8 @@ const char* role(Author author) {
     }
 }
 
-ApiRequest::ApiRequest(std::unique_ptr<char[]>&& body) :  body(std::move(body)) {}
+ApiRequest::ApiRequest(unsigned int chatId, std::unique_ptr<char[]>&& body) :  chatId(chatId), body(std::move(body)) {}
 ApiRequest::ApiRequest(const ApiRequest &req) {
-    id = req.id;
     auto len = std::strlen(req.body.get());
     body = std::make_unique<char[]>(len);
     std::memcpy(body.get(), req.body.get(), len);
@@ -43,9 +42,9 @@ ApiRequest::ApiRequest(const std::vector<Message>& messages) {
 
 GptChat::GptChat(std::string name) :
     Chat(name),
+    client("https://api.openai.com/v1/chat/completions"),
     reqQueue(),
-    resQueue(),
-    client("https://api.openai.com/v1/chat/completions")
+    resQueue()
 {
     client.set_connection_timeout(5);
     client.set_read_timeout(5);

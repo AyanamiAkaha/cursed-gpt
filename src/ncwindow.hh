@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <functional>
+#include <optional>
 
 class Chat;
 class Message;

@@ -25,11 +25,13 @@ public:
 
     Message(const std::string& message, Author author = Author::NONE);
     Message(const Message& msg);
+    Message();
     ~Message();
 };
 
 class Chat {
 protected:
+    unsigned int id = next_id++;
     std::vector<Message> template_messages;
     std::vector<Message> messages;
     uint32_t history_length = 100;

@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include <functional>
+#include <optional>
 
 #include "ncwindow.hh"
 #include "chat.hh"
@@ -36,6 +37,8 @@ void NCWindow::initCurses() {
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
     init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(4, COLOR_WHITE, COLOR_MAGENTA);
+    mvwchgat(w_chat, 0, 0, -1, A_NORMAL, 0, NULL);
+    mvwchgat(w_prompt, 0, 0, -1, A_NORMAL, 0, NULL);
     clear();
 }
 
@@ -134,7 +137,7 @@ void NCWindow::printStatus() {
     wclear(w_status);
     mvwchgat(w_status, 0, 0, -1, A_NORMAL, 4, NULL);
     wattrset(w_status, COLOR_PAIR(4));
-    mvwprintw(w_status, 0, 1, status.c_str());
+    mvwprintw(w_status, 0, 1, "%s", status.c_str());
     wrefresh(w_status);
 }
 
@@ -144,7 +147,7 @@ void NCWindow::printTitle() {
     wattrset(w_title, COLOR_PAIR(4));
     auto lChat = chat.lock();
     if (lChat != nullptr) {
-        mvwprintw(w_title, 0, 1, lChat->getName().c_str());
+        mvwprintw(w_title, 0, 1, "%s", lChat->getName().c_str());
     }
     wrefresh(w_title);
 }
