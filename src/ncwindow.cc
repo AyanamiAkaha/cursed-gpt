@@ -11,6 +11,7 @@ void clean_curses() {
 
 NCWindow::NCWindow() {
     initCurses();
+    width = getmaxx(stdscr);
     createWindows();
     atexit(clean_curses);
 }
@@ -21,6 +22,17 @@ NCWindow::~NCWindow() {
     delwin(w_status);
     delwin(w_chat);
     clean_curses();
+}
+
+void NCWindow::log(std::string msg) {
+    auto lChat = chat.lock();
+    if(lChat != nullptr) {
+        lChat.get()->addString(msg);
+    } else {
+        wclear(w_chat);
+        wprintw(w_chat, "\n%s", msg.c_str());
+        wrefresh(w_chat);
+    }
 }
 
 void NCWindow::initCurses() {
@@ -39,8 +51,6 @@ void NCWindow::initCurses() {
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
     init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(4, COLOR_WHITE, COLOR_MAGENTA);
-    mvwchgat(w_chat, 0, 0, -1, A_NORMAL, 0, NULL);
-    mvwchgat(w_prompt, 0, 0, -1, A_NORMAL, 0, NULL);
     clear();
 }
 
@@ -49,21 +59,26 @@ void NCWindow::createWindows() {
     w_prompt = newwin(1, COLS, LINES - 1, 0);
     w_status = newwin(1, COLS, LINES - 2, 0);
     w_chat = newwin(LINES - 3, COLS, 1, 0);
+    mvwchgat(w_chat, 0, 0, -1, A_NORMAL, 0, NULL);
+    mvwchgat(w_prompt, 0, 0, -1, A_NORMAL, 0, NULL);
     scrollok(w_chat, TRUE);
     scrollok(w_prompt, TRUE);
-    refresh();
+    fullRefresh();
 }
 
 void NCWindow::resize() {
     resizeterm(0, 0);
-    auto width = getmaxx(stdscr);
+    width = getmaxx(stdscr);
     auto height = getmaxy(stdscr);
+    log("resize to " + std::to_string(width) + "x" + std::to_string(height));
     wresize(w_title, 1, width);
     wresize(w_prompt, 1, width);
     wresize(w_status, 1, width);
     wresize(w_chat, height - 3, width);
     mvwin(w_prompt, height - 1, 0);
     mvwin(w_status, height - 2, 0);
+    mvwin(w_chat, 1, 0);
+    mvwin(w_title, 0, 0);
     fullRefresh();
 }
 
@@ -72,6 +87,7 @@ void NCWindow::fullRefresh() {
     wclear(w_status);
     wclear(w_chat);
     wclear(w_title);
+    refresh();
     printTitle();
     printStatus();
     printChat();
@@ -131,21 +147,25 @@ void NCWindow::clearPrompt() {
 }
 
 void NCWindow::setStatusCb(std::function<std::string()> getStatusText) {
+    log("setStatusCb");
     this->getStatusText = getStatusText;
+    printStatus();
 }
 
 void NCWindow::printStatus() {
+    log("printStatus");
     auto status = getStatusText ? getStatusText() : "";
     wclear(w_status);
-    mvwchgat(w_status, 0, 0, -1, A_NORMAL, 4, NULL);
+    mvwchgat(w_status, 0, 0, width, A_NORMAL, 4, NULL);
     wattrset(w_status, COLOR_PAIR(4));
     mvwprintw(w_status, 0, 1, "%s", status.c_str());
     wrefresh(w_status);
 }
 
 void NCWindow::printTitle() {
+    log("printTitle");
     wclear(w_title);
-    mvwchgat(w_title, 0, 0, -1, A_BOLD, 4, NULL);
+    mvwchgat(w_title, 0, 0, width, A_BOLD, 4, NULL);
     wattrset(w_title, COLOR_PAIR(4));
     auto lChat = chat.lock();
     if (lChat != nullptr) {
@@ -154,7 +174,7 @@ void NCWindow::printTitle() {
     wrefresh(w_title);
 }
 
-void NCWindow::setChat(std::weak_ptr<const Chat> chat) {
+void NCWindow::setChat(std::weak_ptr<Chat> chat) {
     this->chat = chat;
     fullRefresh();
 }

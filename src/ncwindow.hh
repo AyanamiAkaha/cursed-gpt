@@ -20,10 +20,12 @@ private:
     WINDOW* w_status;
     std::string inputBuffer;
     int prompt_pos = 0;
-    std::weak_ptr<const Chat> chat;
+    int width = 0;
+    std::weak_ptr<Chat> chat;
     std::function<std::string()> getStatusText;
     unsigned int lastMessageId = 0;
 
+    void log(std::string msg);
     void initCurses();
     void createWindows();
     void printTitle();
@@ -38,7 +40,7 @@ public:
     NCWindow();
     ~NCWindow();
     void setStatusCb(std::function<std::string()> getStatusText);
-    void setChat(std::weak_ptr<const Chat> chat);
+    void setChat(std::weak_ptr<Chat> chat);
     std::optional<std::string> processInput();
     void update();
 };
