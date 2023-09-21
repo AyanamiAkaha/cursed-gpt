@@ -4,19 +4,7 @@
 #include "concurrent_queue.hh"
 #include "gpt_chat.hh"
 
-const char* role(Author author) {
-    switch(author) {
-        case Author::USER:
-            return "user";
-        case Author::ASSISTANT:
-            return "assistant";
-        case Author::SYSTEM:
-            return "system";
-        default:
-            throw std::runtime_error("Invalid author");
-    }
-}
-
+// API Request ----------
 ApiRequest::ApiRequest(unsigned int chatId, std::unique_ptr<char[]>&& body) :  chatId(chatId), body(std::move(body)) {}
 ApiRequest::ApiRequest(const ApiRequest &req) {
     auto len = std::strlen(req.body.get());
@@ -30,7 +18,7 @@ ApiRequest::ApiRequest(const std::vector<Message>& messages) {
     for(auto message : messages) {
         if(message.author == Author::NONE) continue;
         json["messages"].push_back({
-            {"role", role(message.author)},
+            {"role", GptChat::role(message.author)},
             {"content", message.message}
         });
     }
@@ -40,6 +28,15 @@ ApiRequest::ApiRequest(const std::vector<Message>& messages) {
     std::memcpy(body.get(), str.c_str(), len);
 }
 
+// API Response ----------
+ApiResponse::ApiResponse(unsigned int chatId, std::unique_ptr<char[]>&& body) :  chatId(chatId), body(std::move(body)) {}
+ApiResponse::ApiResponse(const ApiResponse &res) {
+    auto len = std::strlen(res.body.get());
+    body = std::make_unique<char[]>(len);
+    std::memcpy(body.get(), res.body.get(), len);
+}
+
+// GptChat ----------
 GptChat::GptChat(std::string name) :
     Chat(name),
     client("https://api.openai.com/v1/chat/completions"),
@@ -52,6 +49,19 @@ GptChat::GptChat(std::string name) :
 }
 
 GptChat::~GptChat() {}
+
+const std::string GptChat::role(Author author) {
+    switch(author) {
+        case Author::USER:
+            return "user";
+        case Author::ASSISTANT:
+            return "assistant";
+        case Author::SYSTEM:
+            return "system";
+        default:
+            throw std::runtime_error("Invalid author");
+    }
+}
 
 void GptChat::send(const std::string &str, Author author)
 {

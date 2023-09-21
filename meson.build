@@ -5,6 +5,8 @@ project('gpt-chat', 'cpp',
 cpp_std = 'c++17'
 ncurses = dependency('ncurses', required: true)
 threads = dependency('threads')
+crypto = dependency('libcrypto')
+libssl = dependency('libssl')
 incdir = include_directories('lib')
 
 exe = executable(
@@ -17,7 +19,7 @@ exe = executable(
   'src/gpt_chat.hh', 'src/gpt_chat.cc',
   'src/app.hh', 'src/app.cc',
   'src/main.cc', 
-  dependencies: [ncurses, threads],
+  dependencies: [ncurses, threads, crypto, libssl],
   include_directories: incdir,
   install : true)
 

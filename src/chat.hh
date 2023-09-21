@@ -6,8 +6,6 @@
 #include <memory>
 #include <atomic>
 
-static std::atomic<unsigned int> next_id(1);
-
 enum class Author {
     NONE,
     SYSTEM,
@@ -17,6 +15,7 @@ enum class Author {
 
 class Message {
 public:
+    static std::atomic<unsigned int> next_id;
     // XXX: I cannot have const fields, because C++ is shitty and vector requires mutable fields
     unsigned int id = next_id++;
     time_t timestamp = time(nullptr);
@@ -30,6 +29,8 @@ public:
 };
 
 class Chat {
+private:
+    static std::atomic<unsigned int> next_id;
 protected:
     unsigned int id = next_id++;
     std::vector<Message> template_messages;

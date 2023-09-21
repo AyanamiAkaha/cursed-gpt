@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "chat.hh"
 
+std::atomic<unsigned int> Message::next_id(1);
 Message::Message(const std::string &message, Author author) : message(message), author(author) {}
 Message::Message(const Message &msg) :
     id(msg.id),
@@ -13,6 +14,7 @@ Message::Message(const Message &msg) :
 Message::Message() : message(""), author(Author::NONE) {}
 Message::~Message() {}
 
+std::atomic<unsigned int> Chat::next_id(1);
 Chat::Chat(std::string name)
 {
     this->name = name;
