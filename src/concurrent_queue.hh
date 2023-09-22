@@ -13,7 +13,7 @@ private:
 public:
     ConcurrentQueue() = default;
     ~ConcurrentQueue() = default;
-    // static_assert(std::is_copy_constructible<T>::value, "T must be copy constructible");
+    static_assert(std::is_copy_constructible<T>::value, "T must be copy constructible");
 
     void push(const T& v);
     T pop();

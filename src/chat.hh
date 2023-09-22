@@ -44,6 +44,6 @@ public:
     std::vector<Message> getMessages() const;
     void addString(const std::string& str);
     virtual void send(const std::string& str, Author author = Author::USER);
-    virtual void onReceive(const std::string& str, Author author = Author::ASSISTANT);
+    virtual void checkReceived();
     std::string getName() const;
 };

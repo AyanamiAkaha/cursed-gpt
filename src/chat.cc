@@ -46,10 +46,7 @@ void Chat::send(const std::string &str, Author author)
     // TODO: send to server
 }
 
-void Chat::onReceive(const std::string &str, Author author)
-{
-    addMsg({str, author});
-}
+void Chat::checkReceived() {}
 
 std::string Chat::getName() const
 {
