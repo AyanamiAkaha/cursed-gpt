@@ -44,7 +44,8 @@ void NCWindow::initCurses() {
     cbreak();
     noecho();
     intrflush(stdscr, FALSE);
-    nodelay(stdscr, TRUE);
+    nodelay(stdscr, FALSE);
+    halfdelay(20);
     keypad(stdscr, TRUE);
     scrollok(stdscr, FALSE);
     init_pair(1, COLOR_CYAN, COLOR_BLACK);

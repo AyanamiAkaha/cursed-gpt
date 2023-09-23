@@ -6,6 +6,7 @@
 #include "app.hh"
 #include "chat.hh"
 #include "ncwindow.hh"
+#include "gpt_chat.hh"
 
 #define PROJECT_NAME "gpt-chat"
 
@@ -35,7 +36,7 @@ CommandResult App::parseCommand(std::string command) {
 }
 
 void App::newChat() {
-    auto chat = std::make_shared<Chat>(PROJECT_NAME);
+    auto chat = std::make_shared<GptChat>(PROJECT_NAME);
     chats.push_back(chat);
     window.setChat(chat);
 }
@@ -47,6 +48,7 @@ int App::run() {
             auto result = parseCommand(maybeCmdStr.value());
             if(result._exit) return result.exit_code;
         }
+        chats.at(current_chat)->checkReceived();
         window.update();
     }
 }

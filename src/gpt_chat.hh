@@ -1,45 +1,52 @@
 #pragma once
 
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+
 #include <atomic>
 #include <thread>
 #include <string>
+#include <httplib.h>
 
-#define CPPHTTPLIB_OPENSSL_SUPPORT
-
-#include "concurrent_queue.hh"
+#include "blocking_queue.hh"
 #include "chat.hh"
 
 class ApiRequest {
 private:
     unsigned int chatId;
-    std::unique_ptr<char[]> body;
+    std::string body;
 public:
     ApiRequest() = delete;
-    ApiRequest(unsigned int chatId, std::unique_ptr<char[]>&& body);
+    ApiRequest(unsigned int chatId, std::string body);
     ApiRequest(const ApiRequest& req);
     ApiRequest(const std::vector<Message>& messages);
     ~ApiRequest() = default;
-    std::string getBody() const { return std::string(body.get()); }
-    std::unique_ptr<char[]> getBodyC();
+    std::string getBody() const { return body; }
     unsigned int getChatId() const { return chatId; }
+};
+
+enum class ContentType {
+    JSON,
+    TEXT
 };
 
 class ApiResponse {
 private:
     unsigned int chatId;
-    std::unique_ptr<char[]> body;
+    std::string body;
+    ContentType contentType;
 public:
-    ApiResponse(unsigned int chatId, std::unique_ptr<char[]>&& body);
+    ApiResponse(unsigned int chatId, std::string body, ContentType contentType);
     ApiResponse(const ApiResponse& res);
     ~ApiResponse() = default;
-    std::string getBody() const { return std::string(body.get()); }
+    std::string getBody() const { return body; }
+    ContentType getContentType() const { return contentType; }
 };
 
 class GptChat : public Chat {
 private:
     httplib::Client client;
-    ConcurrentQueue<ApiRequest> reqQueue;
-    ConcurrentQueue<ApiResponse> resQueue;
+    BlockingQueue<ApiRequest> reqQueue;
+    BlockingQueue<ApiResponse> resQueue;
     std::thread networkThread;
     void networkLoop();
 public:

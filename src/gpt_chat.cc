@@ -1,16 +1,14 @@
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+
 #include <vector>
 #include <httplib.h>
 #include <json.hpp>
-#include "concurrent_queue.hh"
+#include "blocking_queue.hh"
 #include "gpt_chat.hh"
 
 // API Request ----------
-ApiRequest::ApiRequest(unsigned int chatId, std::unique_ptr<char[]>&& body) :  chatId(chatId), body(std::move(body)) {}
-ApiRequest::ApiRequest(const ApiRequest &req) {
-    auto len = std::strlen(req.body.get());
-    body = std::make_unique<char[]>(len);
-    std::memcpy(body.get(), req.body.get(), len);
-}
+ApiRequest::ApiRequest(unsigned int chatId, std::string body) : chatId(chatId), body(body) {}
+ApiRequest::ApiRequest(const ApiRequest &req) : chatId(req.chatId), body(req.body) {}
 ApiRequest::ApiRequest(const std::vector<Message>& messages) {
     nlohmann::json json;
     json["model"] = "gpt-3.5-turbo";
@@ -22,40 +20,30 @@ ApiRequest::ApiRequest(const std::vector<Message>& messages) {
             {"content", message.message}
         });
     }
-    auto str = json.dump();
-    auto len = str.length();
-    body = std::make_unique<char[]>(len);
-    std::memcpy(body.get(), str.c_str(), len);
-}
-std::unique_ptr<char[]> ApiRequest::getBodyC() {
-    return std::move(body);
+    body = json.dump();
 }
 
 // API Response ----------
-ApiResponse::ApiResponse(unsigned int chatId, std::unique_ptr<char[]>&& body) :  chatId(chatId), body(std::move(body)) {}
-ApiResponse::ApiResponse(const ApiResponse &res) {
-    auto len = std::strlen(res.body.get());
-    body = std::make_unique<char[]>(len);
-    std::memcpy(body.get(), res.body.get(), len);
-}
+ApiResponse::ApiResponse(unsigned int chatId, std::string body, ContentType contentType)
+    : chatId(chatId), body(body), contentType(contentType) {}
+ApiResponse::ApiResponse(const ApiResponse &res)
+    : chatId(res.chatId), body(res.body), contentType(res.contentType) {}
 
 // GptChat ----------
 GptChat::GptChat(std::string name) :
     Chat(name),
-    client("https://api.openai.com/v1/chat/completions"),
+    client("http://api.openai.com"),
     reqQueue(),
     resQueue(),
     networkThread(&GptChat::networkLoop, this)
 {
+    auto auth = std::getenv("GPT_API_KEY");
     client.set_connection_timeout(5);
     client.set_read_timeout(5);
     client.set_write_timeout(5);
-    auto auth = std::getenv("GPT_API_KEY");
-    auto headers = httplib::Headers({
-        {"Content-Type", "application/json"},
-        {"Authorization", "Bearer " + std::string(auth)}
-    });
-    client.set_default_headers(headers);
+    client.set_follow_location(true);
+    client.set_bearer_token_auth(auth);
+    client.set_keep_alive(true);
 }
 
 GptChat::~GptChat() {}
@@ -99,6 +87,10 @@ void GptChat::checkReceived() {
     Chat::checkReceived();
     if (resQueue.empty()) return;
     ApiResponse res = resQueue.pop();
+    if (res.getContentType() == ContentType::TEXT) {
+        addString(res.getBody());
+        return;
+    }
     auto json = nlohmann::json::parse(res.getBody());
     time_t timestamp = json["created"].get<time_t>();
     auto choices = json["choices"];
@@ -113,15 +105,12 @@ void GptChat::checkReceived() {
 void GptChat::networkLoop() {
     while(true) {
         ApiRequest req = reqQueue.pop();
-        auto res = client.Post("/complete", req.getBody(), "application/json");
+        auto res = client.Post("/v1/chat/completions", req.getBody(), "application/json");
         if(res && res->status == 200) {
-            resQueue << ApiResponse(req.getChatId(), req.getBodyC());
+            resQueue << ApiResponse(req.getChatId(), res->body, ContentType::JSON);
         } else {
-            std::string err = res ? "Error " + std::to_string(res->status) + ": " +res->reason : "Unknown error";
-            std::unique_ptr<char[]> errC(new char[err.length() + 1]);
-            errC[err.length()] = '\0';
-            std::memcpy(errC.get(), err.c_str(), err.length() + 1);
-            resQueue << ApiResponse(req.getChatId(), std::move(errC));
+            auto err = httplib::to_string(res.error());
+            resQueue << ApiResponse(req.getChatId(), err, ContentType::TEXT);
         }
     }
 }
