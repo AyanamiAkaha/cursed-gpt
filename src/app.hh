@@ -1,36 +1,54 @@
 #pragma once
 
 #include <vector>
+#include <map>
+#include <optional>
 #include <signal.h>
 
 #include "ncwindow.hh"
 
 class Chat;
 
-struct CommandResult {
-    bool _exit;
-    int exit_code;
-};
-
-constexpr CommandResult NO_COMMAND = { false, 0 };
-
 class App
 {
 private:
     std::vector<std::shared_ptr<Chat>> chats;
     int current_chat = 0;
-    std::string input_buffer;
-    bool needs_refresh = true;
     NCWindow window;
+    std::pair<bool, int> _exit = { false, 0 };
 
-    CommandResult processInput();
-    CommandResult parseCommand(std::string command);
-    void newChat();
-    void setTitle();
-    void setStatus();
-    void fullRefresh();
 public:
     App();
     ~App();
     int run();
+    void quit(int exit_code);
+    void newChat();
+    void nextChat();
+    void prevChat();
+    void chatNum(int num);
 };
+
+class Command {
+protected:
+    using CommandFn = std::function<void(App*)>;
+    static std::map<std::string, CommandFn> commands;
+public:
+    static bool run(std::string name, App* app) {
+        auto it = commands.find(name);
+        if (it != commands.end()) {
+            CommandFn& cmd = it->second;
+            cmd(app);
+            return true;
+        }
+        return false;
+    }
+    Command(std::string name, CommandFn code) {
+        commands[name] = code;
+    }
+    virtual ~Command() = default;
+};
+
+
+#define COMMAND(name, code) \
+    static void _##name(App* app) { code; } \
+    static Command _##name##_instance(#name, _##name);

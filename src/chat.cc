@@ -48,7 +48,10 @@ void Chat::send(const std::string &str, Author author)
 
 void Chat::checkReceived() {}
 
-std::string Chat::getName() const
-{
+std::string Chat::getName() const {
     return name;
+}
+
+void Chat::log(const std::string &str) {
+    addString(str);
 }

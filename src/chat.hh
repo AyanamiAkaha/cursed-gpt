@@ -46,4 +46,5 @@ public:
     virtual void send(const std::string& str, Author author = Author::USER);
     virtual void checkReceived();
     std::string getName() const;
+    void log(const std::string& str);
 };
