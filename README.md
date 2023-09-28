@@ -5,9 +5,32 @@ ncurses interface to GPT chat api.
 This is a fun personal project, mostly for refreshing my C++ skills. Currently only simple chat works.
 Forgive my code quality, I haven't used C++ since before C++11, and just getting used to it.
 
+## Building:
+
+```
+meson setup builddir
+meson compile -C builddir
+```
+
+The executable will be at builddir/gpt-chat
+
 ## Usage:
 
-To exit chat type `/q`. Other commands not supported yet.
+If you don't have already, generate [GPT API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key),
+and export it as an environment variable `GPT_API_KEY`.
+
+```
+export GPT_API_KEY=<your api key>
+```
+
+Run the chat with `./builddir/gpt-chat`.
+
+Supported commands:
+
+- `/q` - exit the app
+- `/new` - open new chat window
+- `/next`, `/prev` - move between windows
+- `/save <fname>` - save chat from current window to `fname.json`
 
 ## Known issues:
 
