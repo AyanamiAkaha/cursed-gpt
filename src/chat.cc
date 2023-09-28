@@ -15,11 +15,9 @@ Message::Message() : message(""), author(Author::NONE) {}
 Message::~Message() {}
 
 std::atomic<unsigned int> Chat::next_id(1);
-Chat::Chat(std::string name)
-{
-    this->name = name;
-}
 
+Chat::Chat(std::string name) : name(name) {}
+Chat::Chat(std::string name, std::vector<Message> template_messages) : template_messages(template_messages), name(name) {}
 Chat::~Chat() {}
 
 void Chat::addMsg(const Message msg)

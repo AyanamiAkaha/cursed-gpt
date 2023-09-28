@@ -26,18 +26,19 @@ public:
     void nextChat();
     void prevChat();
     void chatNum(int num);
+    void saveCurrentChat(std::string filename);
 };
 
 class Command {
 protected:
-    using CommandFn = std::function<void(App*)>;
+    using CommandFn = std::function<void(App*, std::string)>;
     static std::map<std::string, CommandFn> commands;
 public:
-    static bool run(std::string name, App* app) {
+    static bool run(std::string name, App* app, std::string args) {
         auto it = commands.find(name);
         if (it != commands.end()) {
             CommandFn& cmd = it->second;
-            cmd(app);
+            cmd(app, args);
             return true;
         }
         return false;
@@ -50,5 +51,5 @@ public:
 
 
 #define COMMAND(name, code) \
-    static void _##name(App* app) { code; } \
+    static void _##name(App* app, std::string args) { code; } \
     static Command _##name##_instance(#name, _##name);

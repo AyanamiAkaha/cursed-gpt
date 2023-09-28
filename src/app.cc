@@ -4,6 +4,8 @@
 #include <optional>
 #include <ncurses.h>
 #include <map>
+#include <fstream>
+#include <json.hpp>
 
 #include "app.hh"
 #include "chat.hh"
@@ -12,7 +14,7 @@
 
 #define PROJECT_NAME "gpt-chat"
 
-std::map<std::string, std::function<void(App*)>> Command::commands;
+std::map<std::string, std::function<void(App*, std::string)>> Command::commands;
 
 App::App(/* args */) {
     newChat();
@@ -50,6 +52,25 @@ void App::chatNum(int num) {
     window.setChat(chats.at(current_chat));
 }
 
+void App::saveCurrentChat(std::string filename) {
+    auto msgs = chats.at(current_chat)->getMessages();
+    auto json = nlohmann::json::object();
+    json["template"] = chats.at(current_chat)->getName();
+    auto jsonMsgs = nlohmann::json::array();
+    for (auto msg: msgs) {
+        jsonMsgs.push_back({
+            {"id", msg.id},
+            {"timestamp", msg.timestamp},
+            {"message", msg.message},
+            {"author", (int)msg.author}
+        });
+    }
+    json["messages"] = jsonMsgs;
+    auto file = std::ofstream(filename);
+    file << json.dump(2);
+    file.close();
+}
+
 int App::run() {
     while(!_exit.first) {
         auto maybeCmdStr = window.processInput();
@@ -58,8 +79,7 @@ int App::run() {
                 auto cmdStr = maybeCmdStr.value().substr(1);
                 auto cmd = cmdStr.substr(0, cmdStr.find(' '));
                 auto args = cmdStr.substr(cmdStr.find(' ') + 1);
-                // TODO: use args
-                if (!Command::run(cmd, this)) {
+                if (!Command::run(cmd, this, args)) {
                     chats.at(current_chat)->log("Unknown command: " + cmd);
                 }
             } else {

@@ -40,6 +40,7 @@ protected:
     void addMsg(const Message msg);
 public:
     Chat(std::string name = "Chat");
+    Chat(std::string name, std::vector<Message> template_messages);
     virtual ~Chat();
     std::vector<Message> getMessages() const;
     void addString(const std::string& str);
