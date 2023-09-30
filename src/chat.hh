@@ -37,6 +37,8 @@ protected:
     std::vector<Message> messages;
     uint32_t history_length = 100;
     std::string name;
+    std::string filename = "";
+    bool saved = false;
     void addMsg(const Message msg);
 public:
     Chat(std::string name = "Chat");
@@ -47,5 +49,9 @@ public:
     virtual void send(const std::string& str, Author author = Author::USER);
     virtual void checkReceived();
     std::string getName() const;
+    std::string getFileName() const;
+    void setFileName(const std::string filename);
+    void markSaved();
+    bool isSaved() const;
     void log(const std::string& str);
 };

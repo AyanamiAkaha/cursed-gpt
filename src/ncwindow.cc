@@ -148,23 +148,25 @@ void NCWindow::clearPrompt() {
 }
 
 void NCWindow::setStatusCb(std::function<std::string()> getStatusText) {
-    log("setStatusCb");
     this->getStatusText = getStatusText;
     printStatus();
 }
 
 void NCWindow::printStatus() {
-    log("printStatus");
+    curs_set(0);
     auto status = getStatusText ? getStatusText() : "";
     wclear(w_status);
     mvwchgat(w_status, 0, 0, width, A_NORMAL, 4, NULL);
     wattrset(w_status, COLOR_PAIR(4));
     mvwprintw(w_status, 0, 1, "%s", status.c_str());
+    wmove(w_prompt, 0, prompt_pos);
+    curs_set(1);
     wrefresh(w_status);
+    wrefresh(w_prompt);
 }
 
 void NCWindow::printTitle() {
-    log("printTitle");
+    curs_set(0);
     wclear(w_title);
     mvwchgat(w_title, 0, 0, width, A_BOLD, 4, NULL);
     wattrset(w_title, COLOR_PAIR(4));
@@ -172,7 +174,10 @@ void NCWindow::printTitle() {
     if (lChat != nullptr) {
         mvwprintw(w_title, 0, 1, "%s", lChat->getName().c_str());
     }
+    wmove(w_prompt, 0, prompt_pos);
+    curs_set(1);
     wrefresh(w_title);
+    wrefresh(w_prompt);
 }
 
 void NCWindow::setChat(std::weak_ptr<Chat> chat) {
@@ -205,7 +210,14 @@ void NCWindow::update() {
         && lChat->getMessages().size() > 0
         && lChat->getMessages().back().id != lastMessageId
     ) {
+        printTitle();
+        printStatus();
         printChat();
         lastMessageId = lChat->getMessages().back().id;
     }
+}
+
+void NCWindow::refreshStatus() {
+    printTitle();
+    printStatus();
 }

@@ -43,4 +43,5 @@ public:
     void setChat(std::weak_ptr<Chat> chat);
     std::optional<std::string> processInput();
     void update();
+    void refreshStatus();
 };

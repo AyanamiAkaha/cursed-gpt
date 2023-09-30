@@ -26,6 +26,7 @@ void Chat::addMsg(const Message msg)
     if (messages.size() > history_length) {
         messages.erase(messages.begin());
     }
+    saved = false;
 }
 
 std::vector<Message> Chat::getMessages() const
@@ -52,4 +53,22 @@ std::string Chat::getName() const {
 
 void Chat::log(const std::string &str) {
     addString(str);
+}
+
+std::string Chat::getFileName() const {
+    return filename;
+}
+
+void Chat::setFileName(const std::string filename) {
+    filename.find(".json") == std::string::npos
+        ? this->filename = filename + ".json"
+        : this->filename = filename;
+}
+
+void Chat::markSaved() {
+    saved = true;
+}
+
+bool Chat::isSaved() const {
+    return saved;
 }
