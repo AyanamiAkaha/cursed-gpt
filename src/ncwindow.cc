@@ -2,8 +2,13 @@
 #include <functional>
 #include <optional>
 
+#include "../config.h"
 #include "ncwindow.hh"
 #include "chat.hh"
+
+#ifdef FILE_LOG
+#include <cstdio>
+#endif
 
 void clean_curses() {
     if(!isendwin()) endwin();
@@ -24,7 +29,8 @@ NCWindow::~NCWindow() {
     clean_curses();
 }
 
-void NCWindow::log(std::string msg) {
+void NCWindow::log(const std::string msg) {
+#ifndef FILE_LOG
     auto lChat = chat.lock();
     if(lChat != nullptr) {
         lChat.get()->addString(msg);
@@ -33,6 +39,12 @@ void NCWindow::log(std::string msg) {
         wprintw(w_chat, "\n%s", msg.c_str());
         wrefresh(w_chat);
     }
+#else 
+#warning "FILE_LOG is enabled"
+    auto LOG_FILE = fopen("/tmp/" PROJECT_NAME ".log", "a");
+    fprintf(LOG_FILE, "%s\n", msg.c_str());
+    fclose(LOG_FILE);
+#endif
 }
 
 void NCWindow::initCurses() {
@@ -89,6 +101,7 @@ void NCWindow::fullRefresh() {
     wclear(w_chat);
     wclear(w_title);
     refresh();
+    rebuildLines();
     printTitle();
     printStatus();
     printChat();
@@ -103,32 +116,108 @@ void NCWindow::redraw() {
     wrefresh(w_prompt);
 }
 
+attr_t NCWindow::author2attr(const Author author) const {
+    switch(author) {
+        case Author::SYSTEM:
+        case Author::NONE:
+            return COLOR_PAIR(1);
+        case Author::USER:
+            return COLOR_PAIR(2) | A_BOLD;
+        case Author::ASSISTANT:
+            return COLOR_PAIR(3);
+        default:
+            return A_NORMAL;
+    }
+}
+
+void NCWindow::rebuildLines() {
+    lines.clear();
+    auto lChat = chat.lock();
+    if (lChat != nullptr) {
+        auto messages = lChat->getMessages();
+        for(auto msg : messages) {
+            addLines(msg);
+        }
+    }
+}
+
+void NCWindow::addLines(const Message& message) {
+    std::string l;
+    for(unsigned int i=0,j=0; i<message.message.length(); i++, j++) {
+        if (message.message[i] != '\n') {
+            l.push_back(message.message[i]);
+        }
+        if (message.message[i] == '\n' || j == width - 1 || i == message.message.length() - 1) {
+            ScreenLine line;
+            line.attrs = author2attr(message.author);
+            line.text = l;
+            lines.push_back(line);
+            j = 0;
+            l.clear();
+        }
+    }
+    // DEBUG - log lines
+    log("-----------------");
+    log("addLines(" + std::to_string(message.id) + ")");
+    for(auto line : lines) {
+        log("\"" + line.text + "\"");
+    }
+    log("lines.size() = " + std::to_string(lines.size()));
+}
+
+void NCWindow::updateLines(const std::shared_ptr<Chat> lChat) {
+    bool updated = false;
+    auto messages = lChat->getMessages();
+    unsigned int lastSeenIdx;
+    if (lastMessageId == 0) {
+        for(auto msg : messages) {
+            addLines(msg);
+        }
+        updated = true;
+    } else {
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            if (messages.at(i).id == lastMessageId) {
+                lastSeenIdx = i;
+                break;
+            }
+        }
+        for (unsigned int i = lastSeenIdx + 1; i < messages.size(); i++) {
+            addLines(messages[i]);
+            updated = true;
+        }
+    }
+    // DEBVG log messages and lines
+    if (updated) {
+        log("-----------------");
+        log("updateLines\n");
+        log("messages: ");
+        for (auto message : messages) {
+            if (message.id == lastMessageId) {
+                break;
+            }
+            log(message.message);
+        }
+        log("messages.size() = " + std::to_string(messages.size()));
+        log("lines: ");
+        for(auto line : lines) {
+            log("\"" + line.text + "\"");
+        }
+        log("lines.size() = " + std::to_string(lines.size()));
+    }
+}
+
 void NCWindow::printChat() {
     curs_set(0);
     wclear(w_chat);
-    wmove(w_chat, 0, 0);
-    auto lChat = chat.lock();
-    if (lChat != nullptr) {
-        for(auto msg : lChat->getMessages()) {
-            switch(msg.author) {
-                case Author::SYSTEM:
-                case Author::NONE:
-                    wattron(w_chat, COLOR_PAIR(1));
-                    break;
-                case Author::USER:
-                    wattron(w_chat, COLOR_PAIR(2));
-                    break;
-                case Author::ASSISTANT:
-                    wattron(w_chat, COLOR_PAIR(3));
-                    break;
-                default:
-                    break;
-            }
-            wprintw(w_chat, "\n%s", msg.message.c_str());
-            wattroff(w_chat, COLOR_PAIR(1));
-            wattroff(w_chat, COLOR_PAIR(2));
-            wattroff(w_chat, COLOR_PAIR(3));
-        }
+    wrefresh(w_chat);
+    unsigned int screenLines = LINES - 3;
+    unsigned int totalLines = lines.size();
+    unsigned int startLine = totalLines > screenLines ? totalLines - screenLines : 0;
+    for (unsigned int i = startLine; i < lines.size(); i++) {
+        auto line = lines[i];
+        wmove(w_chat, i - startLine, 0);
+        wattrset(w_chat, line.attrs);
+        wprintw(w_chat, "%s", line.text.c_str());
     }
     redraw();
     wmove(w_prompt, 0, prompt_pos);
@@ -238,6 +327,20 @@ std::optional<std::string> NCWindow::processInput() {
             flash();
         }
         break;
+    case KEY_NPAGE: {
+            auto scrollSize = (LINES - 3)/2;
+            lastLine = (lastLine - (LINES - 3)/2) % lines.size();
+            printChat();
+            wrefresh(w_chat);
+        }
+        break;
+    case KEY_PPAGE: {
+            auto scrollSize = (LINES - 3)/2;
+            lastLine = (lastLine + (LINES - 3)/2) % lines.size();
+            printChat();
+            wrefresh(w_chat);
+        }
+        break;
     case '\n': {
         std::optional<std::string> result = inputBuffer;
         inputBuffer.clear();
@@ -259,6 +362,7 @@ void NCWindow::update() {
     ) {
         printTitle();
         printStatus();
+        updateLines(lChat);
         printChat();
         lastMessageId = lChat->getMessages().back().id;
     }

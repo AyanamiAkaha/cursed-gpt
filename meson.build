@@ -1,4 +1,4 @@
-project('gpt-chat', 'cpp',
+project('cursed-gpt', 'cpp',
   version : '0.1',
   default_options : ['warning_level=3', 'cpp_std=c++17'])
 
@@ -9,8 +9,22 @@ crypto = dependency('libcrypto')
 libssl = dependency('libssl')
 incdir = include_directories('lib')
 
+file_log = get_option('file_log')
+if file_log
+  add_global_arguments('-DFILE_LOG', language: 'cpp')
+endif
+
+project_name = meson.project_name()
+configuration = configuration_data()
+configuration.set('PROJECT_NAME', project_name)
+configure_file(
+  input: 'config.h.in',
+  output: 'config.h',
+  configuration: configuration
+)
+
 exe = executable(
-  'gpt-chat',
+  project_name,
   'lib/httplib.h',
   'lib/json.hpp',
   'src/blocking_queue.hh',

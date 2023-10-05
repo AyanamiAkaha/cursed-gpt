@@ -8,13 +8,11 @@
 #include <json.hpp>
 #include <filesystem>
 
+#include "../config.h"
 #include "app.hh"
 #include "chat.hh"
 #include "ncwindow.hh"
 #include "gpt_chat.hh"
-
-#define PROJECT_NAME "cursed-gpt"
-#define CONFIG_DIR "." PROJECT_NAME
 
 std::map<std::string, std::function<void(App*, std::string)>> Command::commands;
 
@@ -86,7 +84,7 @@ void App::saveCurrentChat(const std::string filename) {
     }
     json["messages"] = jsonMsgs;
     std::string home = std::getenv("HOME");
-    std::string path = std::filesystem::path(home) / CONFIG_DIR;
+    std::string path = std::filesystem::path(home) /  "." PROJECT_NAME;
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directory(path);
     }

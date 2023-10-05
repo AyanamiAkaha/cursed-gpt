@@ -4,13 +4,16 @@
 #include <string>
 #include <functional>
 #include <optional>
+#include <ncurses.h>
 
 class Chat;
 class Message;
+enum class Author;
 
-// WINDOW type needed by ncurses
-struct _win_st;
-typedef struct _win_st WINDOW;
+struct ScreenLine {
+    attr_t attrs;
+    std::string text;
+};
 
 class NCWindow {
 private:
@@ -19,14 +22,16 @@ private:
     WINDOW* w_title;
     WINDOW* w_status;
     std::string inputBuffer;
-    int prompt_pos = 0;
-    int inputChars = 0;
-    int width = 0;
+    unsigned int prompt_pos = 0;
+    unsigned int inputChars = 0;
+    unsigned int lastLine = 0;
+    std::vector<ScreenLine> lines;
+    unsigned int width = 0;
     std::weak_ptr<Chat> chat;
     std::function<std::string()> getStatusText;
     unsigned int lastMessageId = 0;
 
-    void log(std::string msg);
+    void log(const std::string msg);
     void initCurses();
     void createWindows();
     void printTitle();
@@ -36,7 +41,11 @@ private:
     void resize();
     void redraw();
     void clearPrompt();
+    void rebuildLines();
+    void updateLines(const std::shared_ptr<Chat> lChat);
+    void addLines(const Message& message);
     void printChat();
+    attr_t author2attr(const Author author) const;
 public:
     NCWindow();
     ~NCWindow();

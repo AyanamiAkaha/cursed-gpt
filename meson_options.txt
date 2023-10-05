@@ -1,0 +1,1 @@
+option('file_log', type: 'boolean', value: false)
