@@ -51,5 +51,5 @@ public:
 
 
 #define COMMAND(name, code) \
-    static void _##name(App* app, std::string args __attribute__((unused))) { code; } \
+    static void _##name(App* app, [[maybe_unused]] std::string args) { code; } \
     static Command _##name##_instance(#name, _##name);
