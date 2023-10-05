@@ -137,12 +137,15 @@ void NCWindow::printChat() {
 
 void NCWindow::feedback(const char ch) {
     prompt_pos++;
-    waddch(w_prompt, ch);
+    inputChars++;
+    winsch(w_prompt, ch);
+    wmove(w_prompt, 0, prompt_pos);
     wrefresh(w_prompt);
 }
 
 void NCWindow::clearPrompt() {
     prompt_pos = 0;
+    inputChars = 0;
     wclear(w_prompt);
     wrefresh(w_prompt);
 }
@@ -192,16 +195,60 @@ std::optional<std::string> NCWindow::processInput() {
         resize();
         return std::nullopt;
     }
-    if (ch == '\n') {
+    switch(ch) {
+    case KEY_BACKSPACE:
+    case 127:
+    case '\b':
+        if (prompt_pos > 0) {
+            prompt_pos--;
+            inputChars--;
+            wmove(w_prompt, 0, prompt_pos);
+            wdelch(w_prompt);
+            inputBuffer.erase(prompt_pos, 1);
+        } else {
+            flash();
+        }
+        wrefresh(w_prompt);
+        break;
+    case KEY_LEFT:
+        if (prompt_pos > 0) {
+            prompt_pos--;
+            wmove(w_prompt, 0, prompt_pos);
+            wrefresh(w_prompt);
+        } else {
+            flash();
+        }
+        break;
+    case KEY_RIGHT:
+        if (prompt_pos < inputChars) {
+            prompt_pos++;
+            wmove(w_prompt, 0, prompt_pos);
+            wrefresh(w_prompt);
+        } else {
+            flash();
+        }
+        break;
+    case KEY_DC:
+        if (prompt_pos < inputChars) {
+            wdelch(w_prompt);
+            inputBuffer.erase(prompt_pos, 1);
+            inputChars--;
+            wrefresh(w_prompt);
+        } else {
+            flash();
+        }
+        break;
+    case '\n': {
         std::optional<std::string> result = inputBuffer;
         inputBuffer.clear();
         clearPrompt();
         return result;
-    } else {
-        inputBuffer.push_back(ch);
-        feedback(ch);
-        return std::nullopt;
     }
+    default:
+        inputBuffer.insert(prompt_pos, 1, ch);
+        feedback(ch);
+    }
+    return std::nullopt;
 }
 
 void NCWindow::update() {

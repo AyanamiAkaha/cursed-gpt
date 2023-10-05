@@ -20,6 +20,7 @@ private:
     WINDOW* w_status;
     std::string inputBuffer;
     int prompt_pos = 0;
+    int inputChars = 0;
     int width = 0;
     std::weak_ptr<Chat> chat;
     std::function<std::string()> getStatusText;
