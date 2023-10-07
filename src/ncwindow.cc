@@ -6,10 +6,6 @@
 #include "ncwindow.hh"
 #include "chat.hh"
 
-#ifdef FILE_LOG
-#include <cstdio>
-#endif
-
 void clean_curses() {
     if(!isendwin()) endwin();
 }
@@ -29,8 +25,8 @@ NCWindow::~NCWindow() {
     clean_curses();
 }
 
-void NCWindow::log(const std::string msg) {
-#ifndef FILE_LOG
+[[maybe_unused]]
+void NCWindow::system(const std::string msg) {
     auto lChat = chat.lock();
     if(lChat != nullptr) {
         lChat.get()->addString(msg);
@@ -39,12 +35,6 @@ void NCWindow::log(const std::string msg) {
         wprintw(w_chat, "\n%s", msg.c_str());
         wrefresh(w_chat);
     }
-#else 
-#warning "FILE_LOG is enabled"
-    auto LOG_FILE = fopen("/tmp/" PROJECT_NAME ".log", "a");
-    fprintf(LOG_FILE, "%s\n", msg.c_str());
-    fclose(LOG_FILE);
-#endif
 }
 
 void NCWindow::initCurses() {
@@ -74,8 +64,8 @@ void NCWindow::createWindows() {
     w_chat = newwin(LINES - 3, COLS, 1, 0);
     mvwchgat(w_chat, 0, 0, -1, A_NORMAL, 0, NULL);
     mvwchgat(w_prompt, 0, 0, -1, A_NORMAL, 0, NULL);
-    scrollok(w_chat, TRUE);
-    scrollok(w_prompt, TRUE);
+    scrollok(w_chat, FALSE);
+    scrollok(w_prompt, FALSE);
     fullRefresh();
 }
 
@@ -83,7 +73,6 @@ void NCWindow::resize() {
     resizeterm(0, 0);
     width = getmaxx(stdscr);
     auto height = getmaxy(stdscr);
-    log("resize to " + std::to_string(width) + "x" + std::to_string(height));
     wresize(w_title, 1, width);
     wresize(w_prompt, 1, width);
     wresize(w_status, 1, width);
@@ -105,6 +94,7 @@ void NCWindow::fullRefresh() {
     printTitle();
     printStatus();
     printChat();
+    printPrompt();
     redraw();
 }
 
@@ -156,25 +146,18 @@ void NCWindow::addLines(const Message& message) {
             l.clear();
         }
     }
-    // DEBUG - log lines
-    log("-----------------");
-    log("addLines(" + std::to_string(message.id) + ")");
-    for(auto line : lines) {
-        log("\"" + line.text + "\"");
-    }
-    log("lines.size() = " + std::to_string(lines.size()));
 }
 
 void NCWindow::updateLines(const std::shared_ptr<Chat> lChat) {
-    bool updated = false;
     auto messages = lChat->getMessages();
     unsigned int lastSeenIdx;
     if (lastMessageId == 0) {
         for(auto msg : messages) {
             addLines(msg);
+            lastLine = lines.size();
         }
-        updated = true;
     } else {
+        bool updated = false;
         for (int i = messages.size() - 1; i >= 0; i--) {
             if (messages.at(i).id == lastMessageId) {
                 lastSeenIdx = i;
@@ -185,24 +168,7 @@ void NCWindow::updateLines(const std::shared_ptr<Chat> lChat) {
             addLines(messages[i]);
             updated = true;
         }
-    }
-    // DEBVG log messages and lines
-    if (updated) {
-        log("-----------------");
-        log("updateLines\n");
-        log("messages: ");
-        for (auto message : messages) {
-            if (message.id == lastMessageId) {
-                break;
-            }
-            log(message.message);
-        }
-        log("messages.size() = " + std::to_string(messages.size()));
-        log("lines: ");
-        for(auto line : lines) {
-            log("\"" + line.text + "\"");
-        }
-        log("lines.size() = " + std::to_string(lines.size()));
+        if (updated) lastLine = lines.size();
     }
 }
 
@@ -211,11 +177,10 @@ void NCWindow::printChat() {
     wclear(w_chat);
     wrefresh(w_chat);
     unsigned int screenLines = LINES - 3;
-    unsigned int totalLines = lines.size();
-    unsigned int startLine = totalLines > screenLines ? totalLines - screenLines : 0;
-    for (unsigned int i = startLine; i < lines.size(); i++) {
-        auto line = lines[i];
-        wmove(w_chat, i - startLine, 0);
+    unsigned int startLine = lastLine > screenLines ? lastLine - screenLines : 0;
+    for (unsigned int i = 0; i < screenLines && (i + startLine) < lines.size(); i++) {
+        auto line = lines.at(i + startLine);
+        wmove(w_chat, i, 0);
         wattrset(w_chat, line.attrs);
         wprintw(w_chat, "%s", line.text.c_str());
     }
@@ -225,11 +190,9 @@ void NCWindow::printChat() {
 }
 
 void NCWindow::feedback(const char ch) {
-    prompt_pos++;
     inputChars++;
-    winsch(w_prompt, ch);
-    wmove(w_prompt, 0, prompt_pos);
-    wrefresh(w_prompt);
+    prompt_pos++;
+    printPrompt();
 }
 
 void NCWindow::clearPrompt() {
@@ -272,8 +235,21 @@ void NCWindow::printTitle() {
     wrefresh(w_prompt);
 }
 
+void NCWindow::printPrompt() {
+    curs_set(0);
+    wclear(w_prompt);
+    wmove(w_prompt, 0, 0);
+    auto visiblePrompt = inputBuffer.substr(SUB_MIN_0(prompt_pos, width-1), width - 1);
+    wprintw(w_prompt, "%s", visiblePrompt.c_str());
+    wmove(w_prompt, 0, prompt_pos - SUB_MIN_0(prompt_pos, width-1));
+    curs_set(1);
+    wrefresh(w_prompt);
+}
+
 void NCWindow::setChat(std::weak_ptr<Chat> chat) {
     this->chat = chat;
+    rebuildLines();
+    lastLine = lines.size();
     fullRefresh();
 }
 
@@ -302,8 +278,7 @@ std::optional<std::string> NCWindow::processInput() {
     case KEY_LEFT:
         if (prompt_pos > 0) {
             prompt_pos--;
-            wmove(w_prompt, 0, prompt_pos);
-            wrefresh(w_prompt);
+            printPrompt();
         } else {
             flash();
         }
@@ -311,8 +286,7 @@ std::optional<std::string> NCWindow::processInput() {
     case KEY_RIGHT:
         if (prompt_pos < inputChars) {
             prompt_pos++;
-            wmove(w_prompt, 0, prompt_pos);
-            wrefresh(w_prompt);
+            printPrompt();
         } else {
             flash();
         }
@@ -327,18 +301,46 @@ std::optional<std::string> NCWindow::processInput() {
             flash();
         }
         break;
-    case KEY_NPAGE: {
-            auto scrollSize = (LINES - 3)/2;
-            lastLine = (lastLine - (LINES - 3)/2) % lines.size();
-            printChat();
-            wrefresh(w_chat);
+    case '\x05': // CTRL+E
+    case KEY_END:
+        prompt_pos = inputChars;
+        printPrompt();
+        break;
+    case '\x01': // CTRL+A
+    case KEY_HOME:
+        prompt_pos = 0;
+        printPrompt();
+        break;
+    case '\x17': { // CTRL+W
+            if (prompt_pos > 0) {
+                auto wordStart = inputBuffer.rfind(' ', prompt_pos - 1);
+                if (wordStart == std::string::npos) wordStart = 0;
+                inputBuffer.erase(wordStart, prompt_pos - wordStart);
+                prompt_pos = wordStart;
+                inputChars = inputBuffer.length();
+                wclear(w_prompt);
+                wprintw(w_prompt, "%s", inputBuffer.c_str());
+                wmove(w_prompt, 0, prompt_pos);
+                wrefresh(w_prompt);
+            } else {
+                flash();
+            }
         }
         break;
+    case '\x15': // CTRL+U
+    case KEY_NPAGE: {
+            auto scrollSize = (LINES - 3)/2;
+            lastLine += scrollSize;
+            if (lastLine > lines.size()) lastLine = lines.size();
+            printChat();
+        }
+        break;
+    case '\x04': // Ctrl+D
     case KEY_PPAGE: {
             auto scrollSize = (LINES - 3)/2;
-            lastLine = (lastLine + (LINES - 3)/2) % lines.size();
+            long minLastLine = (long)lines.size() < (long)LINES - 3 ? lines.size() - 1 : LINES - 4;
+            lastLine = (long)lastLine - scrollSize < minLastLine ? minLastLine : lastLine - scrollSize;
             printChat();
-            wrefresh(w_chat);
         }
         break;
     case '\n': {
@@ -364,6 +366,7 @@ void NCWindow::update() {
         printStatus();
         updateLines(lChat);
         printChat();
+        printPrompt();
         lastMessageId = lChat->getMessages().back().id;
     }
 }
@@ -371,4 +374,5 @@ void NCWindow::update() {
 void NCWindow::refreshStatus() {
     printTitle();
     printStatus();
+    printPrompt();
 }

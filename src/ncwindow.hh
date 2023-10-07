@@ -31,11 +31,12 @@ private:
     std::function<std::string()> getStatusText;
     unsigned int lastMessageId = 0;
 
-    void log(const std::string msg);
+    void system(const std::string msg);
     void initCurses();
     void createWindows();
     void printTitle();
     void printStatus();
+    void printPrompt();
     void fullRefresh();
     void feedback(const char);
     void resize();

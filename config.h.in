@@ -1,1 +1,18 @@
+#pragma once
 #define PROJECT_NAME "@PROJECT_NAME@"
+
+#ifdef FILE_LOG
+#warning "FILE_LOG is enabled"
+#include <cstdio>
+#include <string>
+inline void _log(const std::string msg) {
+    auto LOG_FILE = fopen("/tmp/" PROJECT_NAME ".log", "a");
+    fprintf(LOG_FILE, "%s\n", msg.c_str());
+    fclose(LOG_FILE);
+}
+#define debug(msg) _log(msg)
+#else
+#define debug(msg) do {} while(0)
+#endif
+
+#define SUB_MIN_0(a, b) ((a) < (b) ? 0 : (a) - (b))
