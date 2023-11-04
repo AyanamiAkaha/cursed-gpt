@@ -125,3 +125,25 @@ int App::run() {
 void App::quit(int exit_code) {
     _exit = { true, exit_code };
 }
+
+void App::setTemperature(std::string args) {
+    auto lChat = chats.at(current_chat);
+    if (args == "") {
+        lChat->log("Usage: /temperature <value>");
+    } else {
+        try {
+            lChat->setConfigValue("temperature", std::stod(args));
+        } catch (std::invalid_argument) {
+            lChat->log("Invalid temperature: " + args);
+        }
+    }
+}
+
+void App::setModel(std::string args) {
+    auto lChat = chats.at(current_chat);
+    if (args == "") {
+        lChat->log("Usage: /model <model name>");
+    } else {
+        lChat->setConfigValue("model", args);
+    }
+}

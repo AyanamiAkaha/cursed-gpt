@@ -5,6 +5,10 @@
 #include <string>
 #include <memory>
 #include <atomic>
+#include <unordered_map>
+#include <variant>
+
+using ConfigValue = std::variant<std::string, double>;
 
 enum class Author {
     NONE,
@@ -16,7 +20,6 @@ enum class Author {
 class Message {
 public:
     static std::atomic<unsigned int> next_id;
-    // XXX: I cannot have const fields, because C++ is shitty and vector requires mutable fields
     unsigned int id = next_id++;
     time_t timestamp = time(nullptr);
     std::string message;
@@ -33,6 +36,8 @@ private:
     static std::atomic<unsigned int> next_id;
 protected:
     unsigned int id = next_id++;
+    std::unordered_map<std::string, ConfigValue> config;
+
     std::vector<Message> template_messages;
     std::vector<Message> messages;
     uint32_t history_length = 100;
@@ -40,10 +45,13 @@ protected:
     std::string filename = "";
     bool saved = false;
     void addMsg(const Message msg);
+
+    virtual bool isValidConfigKVP(const std::string& key, const ConfigValue& value);
 public:
     Chat(std::string name = "Chat");
     Chat(std::string name, std::vector<Message> template_messages);
     virtual ~Chat();
+    void setConfigValue(const std::string& key, const ConfigValue& value);
     std::vector<Message> getMessages() const;
     void addString(const std::string& str);
     virtual void send(const std::string& str, Author author = Author::USER);

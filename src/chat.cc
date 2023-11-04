@@ -4,6 +4,8 @@
 #include <algorithm>
 #include "chat.hh"
 
+using ConfigValue = std::variant<std::string, double>;
+
 std::atomic<unsigned int> Message::next_id(1);
 Message::Message(const std::string &message, Author author) : message(message), author(author) {}
 Message::Message(const Message &msg) :
@@ -19,6 +21,16 @@ std::atomic<unsigned int> Chat::next_id(1);
 Chat::Chat(std::string name) : name(name) {}
 Chat::Chat(std::string name, std::vector<Message> template_messages) : template_messages(template_messages), name(name) {}
 Chat::~Chat() {}
+
+bool Chat::isValidConfigKVP(const std::string &key, const ConfigValue &value) {
+    return false;
+}
+
+void Chat::setConfigValue(const std::string &key, const ConfigValue &value) {
+    if (isValidConfigKVP(key, value)) {
+        config[key] = value;
+    }
+}
 
 void Chat::addMsg(const Message msg)
 {

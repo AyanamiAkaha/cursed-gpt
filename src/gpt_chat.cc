@@ -1,17 +1,21 @@
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 
 #include <vector>
+#include <unordered_map>
 #include <httplib.h>
 #include <json.hpp>
 #include "blocking_queue.hh"
 #include "gpt_chat.hh"
 
+using ConfigValue = std::variant<std::string, double>;
+
 // API Request ----------
 ApiRequest::ApiRequest(unsigned int chatId, std::string body) : chatId(chatId), body(body) {}
 ApiRequest::ApiRequest(const ApiRequest &req) : chatId(req.chatId), body(req.body) {}
-ApiRequest::ApiRequest(const std::vector<Message>& messages) {
+ApiRequest::ApiRequest(const std::string model, double temperature, const std::vector<Message>& messages) {
     nlohmann::json json;
-    json["model"] = "gpt-3.5-turbo";
+    json["model"] = model;
+    json["temperature"] = temperature;
     json["messages"] = nlohmann::json::array();
     for(auto message : messages) {
         if(message.author == Author::NONE) continue;
@@ -30,6 +34,11 @@ ApiResponse::ApiResponse(const ApiResponse &res)
     : chatId(res.chatId), body(res.body), contentType(res.contentType) {}
 
 // GptChat ----------
+std::unordered_map<std::string, ConfigValue> GptChat::defaultConfig = {
+    {"model", "gpt-3.5-turbo"},
+    {"temperature", 0.7},
+};
+
 GptChat::GptChat(std::string name) :
     Chat(name),
     client("http://api.openai.com"),
@@ -37,6 +46,7 @@ GptChat::GptChat(std::string name) :
     resQueue(),
     networkThread(&GptChat::networkLoop, this)
 {
+    config = defaultConfig;
     auto auth = std::getenv("GPT_API_KEY");
     client.set_connection_timeout(5);
     client.set_read_timeout(5);
@@ -73,13 +83,29 @@ Author GptChat::author(const std::string role) {
     }
 }
 
+bool GptChat::isValidConfigKVP(const std::string &key, const ConfigValue &value) {
+    if (Chat::isValidConfigKVP(key, value)) return true;
+    auto keyIt = defaultConfig.find(key);
+    if (keyIt == defaultConfig.end()) return false;
+    auto defaultValue = keyIt->second;
+    return defaultValue.index() == value.index();
+}
+
+std::string GptChat::model() const {
+    return std::get<std::string>(config.at("model"));
+}
+
+double GptChat::temperature() const {
+    return std::get<double>(config.at("temperature"));
+}
+
 void GptChat::send(const std::string &str, Author author)
 {
     Chat::send(str, author);
     std::vector<Message> allMessages(template_messages.size() + messages.size());
     allMessages.insert(allMessages.end(), template_messages.begin(), template_messages.end());
     allMessages.insert(allMessages.end(), messages.begin(), messages.end());
-    ApiRequest req = ApiRequest(allMessages);
+    ApiRequest req = ApiRequest(model(), temperature(), allMessages);
     reqQueue << req;
 }
 
