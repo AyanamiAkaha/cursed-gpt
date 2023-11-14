@@ -26,6 +26,7 @@ public:
     void nextChat();
     void prevChat();
     void chatNum(int num);
+    Chat& currentChat() const;
     void setTemperature(std::string args);
     void setModel(std::string args);
     void saveCurrentChat(std::string filename);

@@ -55,24 +55,28 @@ void App::chatNum(int num) {
     window.setChat(chats.at(current_chat));
 }
 
+Chat& App::currentChat() const {
+    return *chats.at(current_chat);
+}
+
 void App::saveCurrentChat(const std::string filename) {
     std::string fname;
     if (filename == "") {
-        fname = chats.at(current_chat)->getFileName();
+        fname = currentChat().getFileName();
     } else {
         fname = filename;
-        chats.at(current_chat)->setFileName(filename);
+        currentChat().setFileName(filename);
     }
     if (fname == "") {
-        chats.at(current_chat)->log("No filename specified");
+        currentChat().log("No filename specified");
         return;
     }
     if (fname.find(".json") == std::string::npos) {
         fname += ".json";
     }
-    auto msgs = chats.at(current_chat)->getMessages();
+    auto msgs = currentChat().getMessages();
     auto json = nlohmann::json::object();
-    json["template"] = chats.at(current_chat)->getName();
+    json["template"] = currentChat().getName();
     auto jsonMsgs = nlohmann::json::array();
     for (auto msg: msgs) {
         jsonMsgs.push_back({
@@ -91,7 +95,7 @@ void App::saveCurrentChat(const std::string filename) {
     auto file = std::ofstream(std::filesystem::path(path) / fname);
     file << json.dump(2);
     file.close();
-    chats.at(current_chat)->markSaved();
+    currentChat().markSaved();
 }
 
 int App::run() {
@@ -107,11 +111,11 @@ int App::run() {
                     args = cmdStr.substr(argsIdx + 1);
                 }
                 if (!Command::run(cmd, this, args)) {
-                    chats.at(current_chat)->log("Unknown command: " + cmd);
+                    currentChat().log("Unknown command: " + cmd);
                 }
                 window.refreshStatus();
             } else {
-                chats.at(current_chat)->send(maybeCmdStr.value(), Author::USER);
+                currentChat().send(maybeCmdStr.value(), Author::USER);
             }
         }
         for(auto chat: chats) {
@@ -127,23 +131,23 @@ void App::quit(int exit_code) {
 }
 
 void App::setTemperature(std::string args) {
-    auto lChat = chats.at(current_chat);
     if (args == "") {
-        lChat->log("Usage: /temperature <value>");
+        currentChat().log("Usage: /temperature <value>");
     } else {
         try {
-            lChat->setConfigValue("temperature", std::stod(args));
+            currentChat().setConfigValue("temperature", std::stod(args));
+            currentChat().log("Temperature changed to " + args);
         } catch (std::invalid_argument) {
-            lChat->log("Invalid temperature: " + args);
+            currentChat().log("Invalid temperature: " + args);
         }
     }
 }
 
 void App::setModel(std::string args) {
-    auto lChat = chats.at(current_chat);
     if (args == "") {
-        lChat->log("Usage: /model <model name>");
+        currentChat().log("Usage: /model <model name>");
     } else {
-        lChat->setConfigValue("model", args);
+        currentChat().setConfigValue("model", args);
+        currentChat().log("Model changed to " + args);
     }
 }
