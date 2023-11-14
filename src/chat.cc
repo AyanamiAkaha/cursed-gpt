@@ -7,13 +7,18 @@
 using ConfigValue = std::variant<std::string, double>;
 
 std::atomic<unsigned int> Message::next_id(1);
-Message::Message(const std::string &message, Author author) : message(message), author(author) {}
+
 Message::Message(const Message &msg) :
     id(msg.id),
     timestamp(msg.timestamp),
     message(std::string(msg.message.begin(), msg.message.end())),
     author(msg.author) {}
-Message::Message() : message(""), author(Author::NONE) {}
+Message::Message(time_t timestamp, const std::string &message, Author author) :
+    timestamp(timestamp),
+    message(message),
+    author(author) { id = next_id++; }
+Message::Message(const std::string &message, Author author) : Message(time(nullptr), message, author) {}
+Message::Message() : Message("") {}
 Message::~Message() {}
 
 std::atomic<unsigned int> Chat::next_id(1);
@@ -22,7 +27,7 @@ Chat::Chat(std::string name) : name(name) {}
 Chat::Chat(std::string name, std::vector<Message> template_messages) : template_messages(template_messages), name(name) {}
 Chat::~Chat() {}
 
-bool Chat::isValidConfigKVP(const std::string &key, const ConfigValue &value) {
+bool Chat::isValidConfigKVP([[maybe_unused]] const std::string &key, [[maybe_unused]] const ConfigValue &value) const {
     return false;
 }
 
@@ -44,6 +49,11 @@ void Chat::addMsg(const Message msg)
 std::vector<Message> Chat::getMessages() const
 {
     return messages;
+}
+
+void Chat::setMessages(const std::vector<Message> &msgs)
+{
+    messages = msgs;
 }
 
 void Chat::addString(const std::string &str)

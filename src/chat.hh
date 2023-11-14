@@ -25,6 +25,7 @@ public:
     std::string message;
     Author author;
 
+    Message(time_t timestamp, const std::string& message, Author author);
     Message(const std::string& message, Author author = Author::NONE);
     Message(const Message& msg);
     Message();
@@ -46,13 +47,14 @@ protected:
     bool saved = false;
     void addMsg(const Message msg);
 
-    virtual bool isValidConfigKVP(const std::string& key, const ConfigValue& value);
+    virtual bool isValidConfigKVP([[maybe_unused]] const std::string& key, [[maybe_unused]] const ConfigValue& value) const;
 public:
     Chat(std::string name = "Chat");
     Chat(std::string name, std::vector<Message> template_messages);
     virtual ~Chat();
     void setConfigValue(const std::string& key, const ConfigValue& value);
     std::vector<Message> getMessages() const;
+    void setMessages(const std::vector<Message>& msgs);
     void addString(const std::string& str);
     virtual void send(const std::string& str, Author author = Author::USER);
     virtual void checkReceived();

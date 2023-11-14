@@ -98,6 +98,91 @@ void App::saveCurrentChat(const std::string filename) {
     currentChat().markSaved();
 }
 
+void App::loadChat(const std::string filename) {
+    std::string fname;
+    if (filename == "") {
+        currentChat().log("No filename specified");
+        return;
+    }
+    if (filename.find(".json") == std::string::npos) {
+        fname = filename + ".json";
+    } else {
+        fname = filename;
+    }
+    std::string home = std::getenv("HOME");
+    std::string path = std::filesystem::path(home) /  "." PROJECT_NAME;
+    auto file = std::ifstream(std::filesystem::path(path) / fname);
+    if (!file.is_open()) {
+        currentChat().log("Cannot open chat '" + fname + "': " + strerror(errno));
+        return;
+    }
+    std::vector<Message> messages;
+    try {
+        auto json = nlohmann::json::parse(file);
+        file.close();
+        auto msgs = json["messages"];
+        for (auto msg: msgs) {
+            messages.emplace_back(Message{
+                msg["timestamp"],
+                msg["message"],
+                (Author)msg["author"]
+            });
+        }
+    } catch (const nlohmann::json::exception &e) {
+        currentChat().log("Cannot parse chat '" + fname + "': " + e.what());
+        return;
+    }
+    newChat();
+    currentChat().setFileName(fname);
+    currentChat().setMessages(messages);
+}
+
+void App::cmdList(std::string args) {
+    if (args == "") {
+        currentChat().log("Usage: /list <chats|saved|templates>");
+        return;
+    }
+    if (args == "chats") {
+        listChats();
+    } else if (args == "templates") {
+        listTemplates();
+    } else if (args == "saved") {
+        listSavedChats();
+    } else {
+        currentChat().log("Usage: /list <chats|saved|templates>");
+    }
+}
+
+void App::listSavedChats() {
+    std::string home = std::getenv("HOME");
+    std::string path = std::filesystem::path(home) /  "." PROJECT_NAME;
+    currentChat().log("Saved chats:");
+    for (auto& p: std::filesystem::directory_iterator(path)) {
+        if (p.path().extension() == ".json") {
+            currentChat().log(p.path().filename());
+        }
+    }
+}
+
+void App::listTemplates() {
+    currentChat().log("Templates:");
+    // TODO: list templates
+    /*
+    for (auto& p: std::filesystem::directory_iterator(TEMPLATES_DIR)) {
+        if (p.path().extension() == ".json") {
+            currentChat().log(p.path().filename());
+        }
+    }
+    */
+}
+
+void App::listChats() {
+    currentChat().log("Chats:");
+    for (auto& chat: chats) {
+        currentChat().log(chat->getName() + " (" + chat->getFileName() +")");
+    }
+}
+
 int App::run() {
     while(!_exit.first) {
         auto maybeCmdStr = window.processInput();
@@ -137,8 +222,8 @@ void App::setTemperature(std::string args) {
         try {
             currentChat().setConfigValue("temperature", std::stod(args));
             currentChat().log("Temperature changed to " + args);
-        } catch (std::invalid_argument) {
-            currentChat().log("Invalid temperature: " + args);
+        } catch (const std::invalid_argument& e) {
+            currentChat().log("Invalid temperature: " + args + ": " + e.what());
         }
     }
 }

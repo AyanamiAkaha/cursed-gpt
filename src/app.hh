@@ -17,6 +17,9 @@ private:
     NCWindow window;
     std::pair<bool, int> _exit = { false, 0 };
 
+    void listSavedChats();
+    void listTemplates();
+    void listChats();
 public:
     App();
     ~App();
@@ -30,6 +33,8 @@ public:
     void setTemperature(std::string args);
     void setModel(std::string args);
     void saveCurrentChat(std::string filename);
+    void loadChat(std::string filename);
+    void cmdList(std::string args);
 };
 
 class Command {

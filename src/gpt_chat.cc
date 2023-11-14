@@ -83,7 +83,7 @@ Author GptChat::author(const std::string role) {
     }
 }
 
-bool GptChat::isValidConfigKVP(const std::string &key, const ConfigValue &value) {
+bool GptChat::isValidConfigKVP(const std::string &key, const ConfigValue &value) const {
     if (Chat::isValidConfigKVP(key, value)) return true;
     auto keyIt = defaultConfig.find(key);
     if (keyIt == defaultConfig.end()) return false;

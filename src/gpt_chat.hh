@@ -56,7 +56,7 @@ private:
     double temperature() const;
     void networkLoop();
 protected:
-    bool isValidConfigKVP(const std::string& key, const ConfigValue& value) override;
+    bool isValidConfigKVP([[maybe_unused]] const std::string& key, [[maybe_unused]] const ConfigValue& value) const override;
 public:
     GptChat(std::string name = "GptChat");
     ~GptChat();
