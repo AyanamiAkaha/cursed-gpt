@@ -124,7 +124,7 @@ void GptChat::checkReceived() {
         auto role = choice["message"]["role"].get<std::string>();
         auto content = choice["message"]["content"].get<std::string>();
         auto author = GptChat::author(role);
-        addMsg({content, author});
+        addMsg({timestamp, content, author});
     }
 }
 

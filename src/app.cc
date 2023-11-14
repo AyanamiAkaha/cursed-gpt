@@ -137,6 +137,52 @@ void App::loadChat(const std::string filename) {
     currentChat().setMessages(messages);
 }
 
+void App::exportCurrentChat(std::string filename) {
+    std::string fname;
+    if (filename == "") {
+        fname = currentChat().getFileName();
+    } else {
+        fname = filename;
+    }
+    if (fname == "") {
+        currentChat().log("No filename specified");
+        return;
+    }
+    if (fname.find(".txt") == std::string::npos) {
+        fname += ".txt";
+    }
+    if (fname.find(".json") != std::string::npos) {
+        fname.replace(fname.find(".json"), 5, "");
+    }
+    auto msgs = currentChat().getMessages();
+    if (fname.find("~") != std::string::npos) {
+        std::string home = std::getenv("HOME");
+        fname.replace(fname.find("~"), 1, home);
+    }
+    auto file = std::ofstream(fname);
+    for (auto msg: msgs) {
+        switch (msg.author) {
+            case Author::SYSTEM:
+                file << "[" << msg.dateTime() << "] ## " << msg.message << std::endl;
+                break;
+            case Author::USER:
+                file << "[" << msg.dateTime() << "] " << msg.message << std::endl;
+                break;
+            case Author::ASSISTANT:
+                file << "[" << msg.dateTime() << "] >> " << msg.message << std::endl;
+                break;
+            case Author::NONE:
+                file << "[" << msg.dateTime() << "] ** " << msg.message << std::endl;
+                break;
+            default:
+                file << "[" << msg.dateTime() << "] " << "(\?\?\?)" << msg.message << std::endl;
+        }
+    }
+    file.close();
+    auto fullPath = std::filesystem::absolute(fname);
+    currentChat().log("Chat exported to " + fullPath.string());
+}
+
 void App::cmdList(std::string args) {
     if (args == "") {
         currentChat().log("Usage: /list <chats|saved|templates>");

@@ -2,6 +2,7 @@
 #include <functional>
 #include <variant>
 #include <algorithm>
+#include <ctime>
 #include "chat.hh"
 
 using ConfigValue = std::variant<std::string, double>;
@@ -20,6 +21,13 @@ Message::Message(time_t timestamp, const std::string &message, Author author) :
 Message::Message(const std::string &message, Author author) : Message(time(nullptr), message, author) {}
 Message::Message() : Message("") {}
 Message::~Message() {}
+
+std::string Message::dateTime() const {
+    char buf[80];
+    struct tm *timeinfo = gmtime(&timestamp);
+    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", timeinfo);
+    return std::string(buf);
+}
 
 std::atomic<unsigned int> Chat::next_id(1);
 

@@ -34,6 +34,7 @@ public:
     void setModel(std::string args);
     void saveCurrentChat(std::string filename);
     void loadChat(std::string filename);
+    void exportCurrentChat(std::string path);
     void cmdList(std::string args);
 };
 

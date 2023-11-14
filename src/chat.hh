@@ -24,6 +24,7 @@ public:
     time_t timestamp = time(nullptr);
     std::string message;
     Author author;
+    std::string dateTime() const;
 
     Message(time_t timestamp, const std::string& message, Author author);
     Message(const std::string& message, Author author = Author::NONE);
