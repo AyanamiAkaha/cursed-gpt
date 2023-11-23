@@ -50,6 +50,8 @@ protected:
 
     virtual bool isValidConfigKVP([[maybe_unused]] const std::string& key, [[maybe_unused]] const ConfigValue& value) const;
 public:
+    bool isTemplate = false;
+
     Chat(std::string name = "Chat");
     Chat(std::string name, std::vector<Message> template_messages);
     virtual ~Chat();
@@ -57,12 +59,16 @@ public:
     std::vector<Message> getMessages() const;
     void setMessages(const std::vector<Message>& msgs);
     void addString(const std::string& str);
-    virtual void send(const std::string& str, Author author = Author::USER);
+    virtual void msg(const std::string& str, Author author = Author::USER);
+    virtual void send();
     virtual void checkReceived();
     std::string getName() const;
     std::string getFileName() const;
     void setFileName(const std::string filename);
+    void unsetFileName();
     void markSaved();
     bool isSaved() const;
     void log(const std::string& str);
+    void systemPrompt(const std::string message);
+    void impersonateAssistant(const std::string message);
 };

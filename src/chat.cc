@@ -69,11 +69,23 @@ void Chat::addString(const std::string &str)
     addMsg({str, Author::NONE});
 }
 
-void Chat::send(const std::string &str, Author author)
+void Chat::msg(const std::string &str, Author author)
 {
     addMsg({str, author});
-    // TODO: send to server
+    send();
 }
+
+void Chat::systemPrompt(const std::string message) {
+    addMsg({message, Author::SYSTEM});
+    send();
+}
+
+void Chat::impersonateAssistant(const std::string message) {
+    addMsg({message, Author::ASSISTANT});
+    send();
+}
+
+void Chat::send() {/* dummy */}
 
 void Chat::checkReceived() {}
 
@@ -93,6 +105,10 @@ void Chat::setFileName(const std::string filename) {
     filename.find(".json") == std::string::npos
         ? this->filename = filename + ".json"
         : this->filename = filename;
+}
+
+void Chat::unsetFileName() {
+    filename = "";
 }
 
 void Chat::markSaved() {

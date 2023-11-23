@@ -99,9 +99,8 @@ double GptChat::temperature() const {
     return std::get<double>(config.at("temperature"));
 }
 
-void GptChat::send(const std::string &str, Author author)
+void GptChat::send()
 {
-    Chat::send(str, author);
     std::vector<Message> allMessages(template_messages.size() + messages.size());
     allMessages.insert(allMessages.end(), template_messages.begin(), template_messages.end());
     allMessages.insert(allMessages.end(), messages.begin(), messages.end());

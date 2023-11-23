@@ -14,10 +14,22 @@
 #include "ncwindow.hh"
 #include "gpt_chat.hh"
 
+std::string sanitizeFileName(const std::string& input) {
+    std::string sanitized = input;
+    std::replace_if(sanitized.begin(), sanitized.end(), [](char c) {
+        return !(isalnum(c) || c == '.' || c == '_' || c == '-');
+    }, '_');
+    const size_t maxFileNameLength = 255;
+    if (sanitized.length() > maxFileNameLength) {
+        sanitized.resize(maxFileNameLength);
+    }
+    return sanitized;
+}
+
 std::map<std::string, std::function<void(App*, std::string)>> Command::commands;
 
 App::App(/* args */) {
-    newChat();
+    newChat("");
     window.setChat(chats.at(current_chat));
     window.setStatusCb([this]() {
         return "Chat "
@@ -33,11 +45,68 @@ App::~App() {
     window.setStatusCb([]() { return ""; });
 }
 
-void App::newChat() {
-    auto chat = std::make_shared<GptChat>(PROJECT_NAME + std::to_string(chats.size()));
+void App::cmdNew(std::string args) {
+    // split args by spaces, trim all
+    std::vector<std::string> argsList;
+    std::string arg;
+    for (auto c: args) {
+        if (c == ' ') {
+            if (arg != "") {
+                argsList.push_back(arg);
+                arg = "";
+            }
+        } else {
+            arg += c;
+        }
+    }
+    if(arg != "") {
+        argsList.push_back(arg);
+    }
+    if (argsList.size() == 0) {
+        newChat("");
+    } else if (argsList.size() == 1) {
+        loadTemplate(argsList.at(0));
+        if (argsList.at(0) == "template") {
+            currentChat().log("If you want to create new template use: /new template <template name>");
+        }
+    } else if (argsList.size() == 2 && argsList.at(0) == "template") {
+        newTemplate(argsList.at(1));
+    } else {
+        currentChat().log("Usage: /new [template <template name>]");
+    }
+}
+
+void App::newChat(const std::string name) {
+    auto chatName = name;
+    if (name == "") {
+        chatName = PROJECT_NAME + std::to_string(chats.size());
+    }
+    auto chat = std::make_shared<GptChat>(chatName);
     chats.push_back(chat);
     current_chat = chats.size() - 1;
     window.setChat(chat);
+}
+
+void App::newTemplate(std::string args) {
+    std::string name = sanitizeFileName(args);
+    std::string fname = name + ".json";
+    if(name == "") {
+        currentChat().log("Usage: /new <template name>");
+        return;
+    }
+    std::string path = std::filesystem::path(std::getenv("HOME")) / "." PROJECT_NAME / "templates" / fname;
+    if(std::filesystem::exists(path)) {
+        currentChat().log("Template '" + fname + "' already exists. Use different name or delete it manually first.");
+        return;
+    } else {
+        // FIXME: either load to templateMessages or delete it from Chat
+        auto chat = std::make_shared<Chat>(name);
+        chat->isTemplate = true;
+        chat->setFileName(fname);
+        chats.push_back(chat);
+        current_chat = chats.size() - 1;
+        window.setChat(chat);
+    }
 }
 
 void App::nextChat() {
@@ -89,6 +158,9 @@ void App::saveCurrentChat(const std::string filename) {
     json["messages"] = jsonMsgs;
     std::string home = std::getenv("HOME");
     std::string path = std::filesystem::path(home) /  "." PROJECT_NAME;
+    if (currentChat().isTemplate) {
+        path = std::filesystem::path(home) /  "." PROJECT_NAME / "templates";
+    }
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directory(path);
     }
@@ -98,7 +170,16 @@ void App::saveCurrentChat(const std::string filename) {
     currentChat().markSaved();
 }
 
-void App::loadChat(const std::string filename) {
+void App::loadChat(std::string filename) {
+    load(filename, std::filesystem::path(std::getenv("HOME")) / "." PROJECT_NAME);
+}
+
+void App::loadTemplate(std::string filename) {
+    load(filename, std::filesystem::path(std::getenv("HOME")) / "." PROJECT_NAME / "templates");
+    currentChat().unsetFileName();
+}
+
+void App::load(const std::string filename, std::string rootPath) {
     std::string fname;
     if (filename == "") {
         currentChat().log("No filename specified");
@@ -109,8 +190,7 @@ void App::loadChat(const std::string filename) {
     } else {
         fname = filename;
     }
-    std::string home = std::getenv("HOME");
-    std::string path = std::filesystem::path(home) /  "." PROJECT_NAME;
+    auto path = rootPath;
     auto file = std::ifstream(std::filesystem::path(path) / fname);
     if (!file.is_open()) {
         currentChat().log("Cannot open chat '" + fname + "': " + strerror(errno));
@@ -132,7 +212,7 @@ void App::loadChat(const std::string filename) {
         currentChat().log("Cannot parse chat '" + fname + "': " + e.what());
         return;
     }
-    newChat();
+    newChat(filename);
     currentChat().setFileName(fname);
     currentChat().setMessages(messages);
 }
@@ -246,7 +326,7 @@ int App::run() {
                 }
                 window.refreshStatus();
             } else {
-                currentChat().send(maybeCmdStr.value(), Author::USER);
+                currentChat().msg(maybeCmdStr.value(), Author::USER);
             }
         }
         for(auto chat: chats) {

@@ -62,6 +62,6 @@ public:
     ~GptChat();
     static std::string role(const Author author);
     static Author author(const std::string role);
-    void send(const std::string& str, Author author = Author::USER);
+    void send() override;
     void checkReceived();
 };

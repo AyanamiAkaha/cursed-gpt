@@ -20,12 +20,13 @@ private:
     void listSavedChats();
     void listTemplates();
     void listChats();
+    void load(std::string filename, std::string rootPath);
 public:
     App();
     ~App();
     int run();
     void quit(int exit_code);
-    void newChat();
+    void newChat(const std::string name);
     void nextChat();
     void prevChat();
     void chatNum(int num);
@@ -34,8 +35,11 @@ public:
     void setModel(std::string args);
     void saveCurrentChat(std::string filename);
     void loadChat(std::string filename);
+    void loadTemplate(std::string filename);
     void exportCurrentChat(std::string path);
     void cmdList(std::string args);
+    void cmdNew(std::string args);
+    void newTemplate(std::string args);
 };
 
 class Command {
