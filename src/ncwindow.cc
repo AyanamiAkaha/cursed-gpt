@@ -189,7 +189,7 @@ void NCWindow::printChat() {
     curs_set(1);
 }
 
-void NCWindow::feedback(const char ch) {
+void NCWindow::feedback([[maybe_unused]] const char ch) {
     inputChars++;
     prompt_pos++;
     printPrompt();

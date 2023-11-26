@@ -40,9 +40,7 @@ protected:
     unsigned int id = next_id++;
     std::unordered_map<std::string, ConfigValue> config;
 
-    std::vector<Message> template_messages;
     std::vector<Message> messages;
-    uint32_t history_length = 100;
     std::string name;
     std::string filename = "";
     bool saved = false;

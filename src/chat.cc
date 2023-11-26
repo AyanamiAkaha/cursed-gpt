@@ -32,7 +32,6 @@ std::string Message::dateTime() const {
 std::atomic<unsigned int> Chat::next_id(1);
 
 Chat::Chat(std::string name) : name(name) {}
-Chat::Chat(std::string name, std::vector<Message> template_messages) : template_messages(template_messages), name(name) {}
 Chat::~Chat() {}
 
 bool Chat::isValidConfigKVP([[maybe_unused]] const std::string &key, [[maybe_unused]] const ConfigValue &value) const {
@@ -48,9 +47,6 @@ void Chat::setConfigValue(const std::string &key, const ConfigValue &value) {
 void Chat::addMsg(const Message msg)
 {
     messages.push_back(msg);
-    if (messages.size() > history_length) {
-        messages.erase(messages.begin());
-    }
     saved = false;
 }
 

@@ -101,10 +101,7 @@ double GptChat::temperature() const {
 
 void GptChat::send()
 {
-    std::vector<Message> allMessages(template_messages.size() + messages.size());
-    allMessages.insert(allMessages.end(), template_messages.begin(), template_messages.end());
-    allMessages.insert(allMessages.end(), messages.begin(), messages.end());
-    ApiRequest req = ApiRequest(model(), temperature(), allMessages);
+    ApiRequest req = ApiRequest(model(), temperature(), messages);
     reqQueue << req;
 }
 

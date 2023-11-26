@@ -99,7 +99,6 @@ void App::newTemplate(std::string args) {
         currentChat().log("Template '" + fname + "' already exists. Use different name or delete it manually first.");
         return;
     } else {
-        // FIXME: either load to templateMessages or delete it from Chat
         auto chat = std::make_shared<Chat>(name);
         chat->isTemplate = true;
         chat->setFileName(fname);
